@@ -120,10 +120,11 @@ QVariantList JsNetworkRequest::headers() const
     return headers;
 }
 
-void JsNetworkRequest::changeUrl(const QString& url)
+void JsNetworkRequest::changeUrl(const QString& address)
 {
     if (m_networkRequest) {
-        m_networkRequest->setUrl(QUrl(url));
+        QUrl url = QUrl::fromEncoded(QByteArray(address.toAscii()));
+        m_networkRequest->setUrl(url);
     }
 }
 
@@ -355,6 +356,8 @@ void NetworkAccessManager::handleFinished(QNetworkReply *reply, const QVariant &
     m_started.remove(reply);
 
     emit resourceReceived(data);
+
+    reply->deleteLater();
 }
 
 void NetworkAccessManager::handleSslErrors(const QList<QSslError> &errors)
@@ -376,17 +379,13 @@ void NetworkAccessManager::handleNetworkError()
              << "(" << reply->errorString() << ")"
              << "URL:" << reply->url().toString();
 
-    m_ids.remove(reply);
-
-    if (m_started.contains(reply))
-        m_started.remove(reply);
 
     QVariantMap data;
     data["url"] = reply->url().toString();
+    data["id"] = m_ids.value(reply);
     data["errorCode"] = reply->error();
     data["errorString"] = reply->errorString();
 
     emit resourceError(data);
 
-    reply->deleteLater();
 }

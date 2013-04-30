@@ -54,7 +54,6 @@ public:
     Q_INVOKABLE void addHeader(const QString& name, const QString& value);
     Q_INVOKABLE bool removeHeader(const QString& name);
     QVariantList headers() const;
-
 private:
     QNetworkRequest* m_networkRequest;
 };

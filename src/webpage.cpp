@@ -112,8 +112,8 @@ public:
 
 public slots:
     bool shouldInterruptJavaScript() {
-        QApplication::processEvents(QEventLoop::AllEvents, 42);
-        return false;
+         bool willInterrupt = m_webPage->javascriptInterrupt();
+        return willInterrupt;
     }
 
 protected:
@@ -251,6 +251,7 @@ public:
         , m_filePickerCallback(NULL)
         , m_jsConfirmCallback(NULL)
         , m_jsPromptCallback(NULL)
+        , m_jsInterruptCallback(NULL)
     {
     }
 
@@ -290,6 +291,15 @@ public:
         return m_jsPromptCallback;
     }
 
+    QObject *getJsInterruptCallback() {
+        qDebug() << "WebpageCallbacks - getJsInterruptCallback";
+        
+        if (!m_jsInterruptCallback) {
+            m_jsInterruptCallback = new Callback(this);
+        }
+        return m_jsInterruptCallback;
+    }
+
 public slots:
     QVariant call(const QVariantList &arguments) {
         if (m_genericCallback) {
@@ -303,6 +313,7 @@ private:
     Callback *m_filePickerCallback;
     Callback *m_jsConfirmCallback;
     Callback *m_jsPromptCallback;
+    Callback *m_jsInterruptCallback;
 
     friend class WebPage;
 };
@@ -707,6 +718,18 @@ bool WebPage::javaScriptPrompt(const QString &msg, const QString &defaultValue, 
             return true;
         }
     }
+    return false;
+}
+
+bool WebPage::javascriptInterrupt()
+{
+    if (m_callbacks->m_jsInterruptCallback) {
+        QVariant res = m_callbacks->m_jsInterruptCallback->call(QVariantList());
+        if (res.canConvert<bool>()) {
+            return res.toBool();
+        }
+    }
+
     return false;
 }
 
@@ -1269,6 +1292,15 @@ QObject *WebPage::_getJsPromptCallback()
     }
 
     return m_callbacks->getJsPromptCallback();
+}
+
+QObject *WebPage::_getJsInterruptCallback()
+{
+    if (!m_callbacks) {
+        m_callbacks = new WebpageCallbacks(this);
+    }
+
+    return m_callbacks->getJsInterruptCallback();
 }
 
 void WebPage::sendEvent(const QString &type, const QVariant &arg1, const QVariant &arg2, const QString &mouseButton, const QVariant &modifierArg)
