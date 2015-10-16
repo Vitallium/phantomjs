@@ -187,6 +187,18 @@ class PhantomJSBuilder(object):
                     "-no-c++11", # Build fails on mac right now with C++11 TODO: is this still valid?
                 ])
                 # NOTE: fontconfig is not required on Darwin (we use Core Text for font enumeration)
+                # Quick hack to find OpenSSL include and lib dirs
+                openssl_libs = os.environ.has_key("OPENSSL_LIBS")
+                if openssl_libs:
+                  platformOptions.extend(os.environ["OPENSSL_LIBS"])
+                elif os.path.exists("/usr/local/opt/openssl/lib"):
+                  # try to get `Brewed` OpenSSL
+                  platformOptions.extend([
+                    "-L/usr/local/opt/openssl/lib",
+                    "-I/usr/local/opt/openssl/include"
+                  ])
+                else:
+                  raise RuntimeError("OpenSSL is required to build PhantomJS")
             else:
                 # options specific to other Unixes, like Linux, BSD, ...
                 platformOptions.extend([
